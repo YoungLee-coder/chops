@@ -14,6 +14,8 @@ struct ContentView: View {
 
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
+        } content: {
+            SkillListView()
         } detail: {
             if let skill = appState.selectedSkill {
                 SkillDetailView(skill: skill)
@@ -41,7 +43,10 @@ struct ContentView: View {
                 }
             }
         }
-        .frame(minWidth: 800, minHeight: 500)
+        .frame(minWidth: 900, minHeight: 500)
+        .onReceive(NotificationCenter.default.publisher(for: .customScanPathsChanged)) { _ in
+            scanner?.scanAll()
+        }
     }
 
     private func startScanning() {
@@ -49,7 +54,6 @@ struct ContentView: View {
         self.scanner = scanner
         scanner.scanAll()
 
-        // Set up file watching
         var allPaths: [String] = []
         for tool in ToolSource.allCases {
             allPaths.append(contentsOf: tool.globalPaths)

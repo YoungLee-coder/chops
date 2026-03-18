@@ -18,7 +18,6 @@ struct ChopsApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Skill.self,
-            Tag.self,
             SkillCollection.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

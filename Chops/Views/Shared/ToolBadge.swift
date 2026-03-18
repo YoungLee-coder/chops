@@ -1,34 +1,48 @@
 import SwiftUI
 
+/// Small text badge for the metadata bar
 struct ToolBadge: View {
     let tool: ToolSource
-    var size: BadgeSize = .regular
-
-    enum BadgeSize {
-        case small, regular, large
-
-        var iconFont: Font {
-            switch self {
-            case .small: .caption2
-            case .regular: .caption
-            case .large: .body
-            }
-        }
-
-        var padding: CGFloat {
-            switch self {
-            case .small: 3
-            case .regular: 4
-            case .large: 6
-            }
-        }
-    }
 
     var body: some View {
-        Image(systemName: tool.iconName)
-            .font(size.iconFont)
-            .foregroundStyle(.white)
-            .padding(size.padding)
-            .background(tool.color, in: RoundedRectangle(cornerRadius: 4))
+        Text(tool.shortLabel)
+            .font(.system(size: 9, weight: .semibold, design: .rounded))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 3))
+    }
+}
+
+/// Icon for the sidebar — uses custom logo asset or SF Symbol fallback
+struct ToolIcon: View {
+    let tool: ToolSource
+    var size: CGFloat = 16
+
+    var body: some View {
+        if let assetName = tool.logoAssetName {
+            Image(assetName)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+        } else {
+            Image(systemName: tool.iconName)
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+extension ToolSource {
+    var shortLabel: String {
+        switch self {
+        case .claude: "CC"
+        case .cursor: "CU"
+        case .windsurf: "WS"
+        case .codex: "CX"
+        case .copilot: "CP"
+        case .aider: "AI"
+        case .amp: "AM"
+        case .custom: "?"
+        }
     }
 }

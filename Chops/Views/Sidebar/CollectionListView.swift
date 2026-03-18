@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 
 struct CollectionListView: View {
-    @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SkillCollection.sortOrder) private var collections: [SkillCollection]
     @State private var showingNewCollection = false
@@ -18,36 +17,15 @@ struct CollectionListView: View {
 
     var body: some View {
         ForEach(collections) { collection in
-            Button {
-                if appState.sidebarFilter == .collection(collection.name) {
-                    appState.sidebarFilter = .all
-                } else {
-                    appState.sidebarFilter = .collection(collection.name)
-                }
-            } label: {
-                Label {
-                    HStack {
-                        Text(collection.name)
-                        Spacer()
-                        Text("\(collection.skills.count)")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                } icon: {
-                    Image(systemName: collection.icon)
-                }
-            }
-            .buttonStyle(.plain)
-            .fontWeight(appState.sidebarFilter == .collection(collection.name) ? .semibold : .regular)
-            .contextMenu {
-                Button("Delete", role: .destructive) {
-                    modelContext.delete(collection)
-                    try? modelContext.save()
-                    if appState.sidebarFilter == .collection(collection.name) {
-                        appState.sidebarFilter = .all
+            Label(collection.name, systemImage: collection.icon)
+                .badge(collection.skills.count)
+                .tag(SidebarFilter.collection(collection.name))
+                .contextMenu {
+                    Button("Delete", role: .destructive) {
+                        modelContext.delete(collection)
+                        try? modelContext.save()
                     }
                 }
-            }
         }
 
         Button {

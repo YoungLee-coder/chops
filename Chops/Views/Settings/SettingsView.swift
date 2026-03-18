@@ -1,7 +1,10 @@
 import SwiftUI
 
+extension Notification.Name {
+    static let customScanPathsChanged = Notification.Name("customScanPathsChanged")
+}
+
 struct SettingsView: View {
-    @AppStorage("customScanPaths") private var customScanPathsData: Data = Data()
     @State private var customPaths: [String] = []
     @State private var defaultTool: ToolSource = .claude
 
@@ -40,7 +43,7 @@ struct SettingsView: View {
             Text("Custom Scan Directories")
                 .font(.headline)
 
-            Text("Add directories to scan for skills beyond the default tool locations.")
+            Text("Add a parent directory (e.g. ~/Development) and Chops will scan each project inside it for tool-specific skills.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -92,5 +95,6 @@ struct SettingsView: View {
 
     private func saveCustomPaths() {
         UserDefaults.standard.set(customPaths, forKey: "customScanPaths")
+        NotificationCenter.default.post(name: .customScanPathsChanged, object: nil)
     }
 }

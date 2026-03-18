@@ -3,25 +3,54 @@ import Foundation
 
 @Model
 final class Skill {
-    @Attribute(.unique) var filePath: String
-    var toolSourceRaw: String
+    @Attribute(.unique) var resolvedPath: String
+    var filePath: String
     var isDirectory: Bool
     var name: String
     var skillDescription: String
     var content: String
     var frontmatterData: Data?
-    var tags: [Tag]
+
     var collections: [SkillCollection]
     var isFavorite: Bool
     var lastOpened: Date?
     var fileModifiedDate: Date
     var fileSize: Int
     var isGlobal: Bool
-    var resolvedPath: String
 
+    /// Comma-separated tool raw values (e.g. "claude,cursor,codex")
+    var toolSourcesRaw: String
+
+    /// All file paths where this skill is installed (JSON-encoded array)
+    var installedPathsData: Data?
+
+    // MARK: - Computed
+
+    var toolSources: [ToolSource] {
+        get {
+            toolSourcesRaw
+                .split(separator: ",")
+                .compactMap { ToolSource(rawValue: String($0)) }
+        }
+        set {
+            let unique = Array(Set(newValue.map(\.rawValue))).sorted()
+            toolSourcesRaw = unique.joined(separator: ",")
+        }
+    }
+
+    /// Primary tool source (first one added)
     var toolSource: ToolSource {
-        get { ToolSource(rawValue: toolSourceRaw) ?? .custom }
-        set { toolSourceRaw = newValue.rawValue }
+        toolSources.first ?? .custom
+    }
+
+    var installedPaths: [String] {
+        get {
+            guard let data = installedPathsData else { return [filePath] }
+            return (try? JSONDecoder().decode([String].self, from: data)) ?? [filePath]
+        }
+        set {
+            installedPathsData = try? JSONEncoder().encode(Array(Set(newValue)))
+        }
     }
 
     var frontmatter: [String: String] {
@@ -34,6 +63,25 @@ final class Skill {
         }
     }
 
+    /// How many tools this skill is installed for
+    var installCount: Int { toolSources.count }
+
+    /// For project-level skills, extracts the project name from the path.
+    /// e.g. ~/Development/every-expert/.claude/skills/foo/SKILL.md → "every-expert"
+    var projectName: String? {
+        guard !isGlobal else { return nil }
+        let components = filePath.components(separatedBy: "/")
+        // Find the component before a dotfile directory (.claude, .cursor, .codex, etc.)
+        for (i, component) in components.enumerated() {
+            if component.hasPrefix(".") && i > 0 {
+                return components[i - 1]
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Init
+
     init(
         filePath: String,
         toolSource: ToolSource,
@@ -42,7 +90,7 @@ final class Skill {
         skillDescription: String = "",
         content: String = "",
         frontmatter: [String: String] = [:],
-        tags: [Tag] = [],
+
         collections: [SkillCollection] = [],
         isFavorite: Bool = false,
         lastOpened: Date? = nil,
@@ -51,20 +99,37 @@ final class Skill {
         isGlobal: Bool = true,
         resolvedPath: String = ""
     ) {
+        self.resolvedPath = resolvedPath.isEmpty ? filePath : resolvedPath
         self.filePath = filePath
-        self.toolSourceRaw = toolSource.rawValue
+        self.toolSourcesRaw = toolSource.rawValue
+        self.installedPathsData = try? JSONEncoder().encode([filePath])
         self.isDirectory = isDirectory
         self.name = name
         self.skillDescription = skillDescription
         self.content = content
         self.frontmatterData = try? JSONEncoder().encode(frontmatter)
-        self.tags = tags
+
         self.collections = collections
         self.isFavorite = isFavorite
         self.lastOpened = lastOpened
         self.fileModifiedDate = fileModifiedDate
         self.fileSize = fileSize
         self.isGlobal = isGlobal
-        self.resolvedPath = resolvedPath
+    }
+
+    // MARK: - Merge
+
+    /// Merge another location/tool into this skill
+    func addInstallation(path: String, tool: ToolSource) {
+        var paths = installedPaths
+        if !paths.contains(path) {
+            paths.append(path)
+            installedPaths = paths
+        }
+        var tools = toolSources
+        if !tools.contains(tool) {
+            tools.append(tool)
+            toolSources = tools
+        }
     }
 }

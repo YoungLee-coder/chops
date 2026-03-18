@@ -25,6 +25,7 @@ enum ToolSource: String, Codable, CaseIterable, Identifiable {
         }
     }
 
+    /// SF Symbol fallback icon name
     var iconName: String {
         switch self {
         case .claude: "brain.head.profile"
@@ -35,6 +36,18 @@ enum ToolSource: String, Codable, CaseIterable, Identifiable {
         case .aider: "wrench.and.screwdriver"
         case .amp: "bolt.fill"
         case .custom: "folder"
+        }
+    }
+
+    /// Asset catalog image name, nil if no custom logo
+    var logoAssetName: String? {
+        switch self {
+        case .claude: "tool-claude"
+        case .cursor: "tool-cursor"
+        case .codex: "tool-codex"
+        case .windsurf: "tool-windsurf"
+        case .amp: "tool-amp"
+        default: nil
         }
     }
 

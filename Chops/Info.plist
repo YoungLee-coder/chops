@@ -18,6 +18,10 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>CFBundleIconFile</key>
+	<string>ChopsIcon</string>
+	<key>CFBundleIconName</key>
+	<string>ChopsIcon</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Josh Pigford. All rights reserved.</string>
 	<key>SUFeedURL</key>

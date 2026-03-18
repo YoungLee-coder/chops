@@ -6,21 +6,12 @@ struct SkillDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        HSplitView {
-            // If directory-based, show file browser on the left
-            if skill.isDirectory {
-                DirectoryBrowserView(skill: skill)
-                    .frame(minWidth: 180, maxWidth: 220)
-            }
+        VStack(spacing: 0) {
+            SkillEditorView(skill: skill)
 
-            // Main editor area
-            VStack(spacing: 0) {
-                SkillEditorView(skill: skill)
+            Divider()
 
-                Divider()
-
-                SkillMetadataBar(skill: skill)
-            }
+            SkillMetadataBar(skill: skill)
         }
         .navigationTitle(skill.name)
         .toolbar {

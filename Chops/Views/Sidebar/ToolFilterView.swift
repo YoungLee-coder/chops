@@ -6,12 +6,12 @@ struct ToolFilterView: View {
     @Query(sort: \Skill.name) private var allSkills: [Skill]
 
     private func count(for tool: ToolSource) -> Int {
-        allSkills.filter { $0.toolSource == tool }.count
+        allSkills.filter { $0.toolSources.contains(tool) }.count
     }
 
     private var activeSources: [ToolSource] {
         ToolSource.allCases.filter { tool in
-            allSkills.contains { $0.toolSource == tool }
+            allSkills.contains { $0.toolSources.contains(tool) }
         }
     }
 
@@ -24,17 +24,12 @@ struct ToolFilterView: View {
                     appState.sidebarFilter = .tool(tool)
                 }
             } label: {
-                Label {
-                    HStack {
-                        Text(tool.displayName)
-                        Spacer()
-                        Text("\(count(for: tool))")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    }
-                } icon: {
-                    Image(systemName: tool.iconName)
-                        .foregroundStyle(tool.color)
+                HStack {
+                    Text(tool.displayName)
+                    Spacer()
+                    Text("\(count(for: tool))")
+                        .foregroundStyle(.tertiary)
+                        .font(.caption)
                 }
             }
             .buttonStyle(.plain)

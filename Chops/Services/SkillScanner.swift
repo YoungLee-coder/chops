@@ -9,24 +9,67 @@ final class SkillScanner {
         self.modelContext = modelContext
     }
 
+    /// Project-level paths to probe inside each project directory
+    private static let projectProbes: [(subpath: String, tool: ToolSource)] = [
+        (".claude/skills", .claude),
+        (".cursor/skills", .cursor),
+        (".cursor/rules", .cursor),
+        (".codex", .codex),
+        (".windsurf/rules", .windsurf),
+        (".github", .copilot),
+        (".config/amp", .amp),
+    ]
+
     func scanAll() {
         for tool in ToolSource.allCases where tool != .custom {
             scanTool(tool)
         }
         let customPaths = UserDefaults.standard.stringArray(forKey: "customScanPaths") ?? []
         for path in customPaths {
-            scanDirectory(URL(fileURLWithPath: path), toolSource: .custom)
+            scanCustomDirectory(URL(fileURLWithPath: path))
+        }
+    }
+
+    /// Scans a custom directory by iterating its subdirectories (projects)
+    /// and probing each for tool-specific skill locations.
+    private func scanCustomDirectory(_ directory: URL) {
+        let fm = FileManager.default
+        guard let projects = try? fm.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        for project in projects {
+            var isDir: ObjCBool = false
+            fm.fileExists(atPath: project.path, isDirectory: &isDir)
+            guard isDir.boolValue else { continue }
+
+            for probe in Self.projectProbes {
+                let probePath = project.appendingPathComponent(probe.subpath)
+                guard fm.fileExists(atPath: probePath.path) else { continue }
+
+                if probe.tool == .copilot {
+                    // Copilot: single file
+                    let file = probePath.appendingPathComponent("copilot-instructions.md")
+                    if fm.fileExists(atPath: file.path) {
+                        upsertSkill(at: file, toolSource: .copilot, isDirectory: false, isGlobal: false)
+                    }
+                } else {
+                    scanDirectory(probePath, toolSource: probe.tool, isGlobal: false)
+                }
+            }
         }
     }
 
     func scanTool(_ tool: ToolSource) {
         for path in tool.globalPaths {
             let url = URL(fileURLWithPath: path)
-            scanDirectory(url, toolSource: tool)
+            scanDirectory(url, toolSource: tool, isGlobal: true)
         }
     }
 
-    private func scanDirectory(_ directory: URL, toolSource: ToolSource) {
+    private func scanDirectory(_ directory: URL, toolSource: ToolSource, isGlobal: Bool = true) {
         let fm = FileManager.default
 
         var isDir: ObjCBool = false
@@ -36,7 +79,7 @@ final class SkillScanner {
         if toolSource == .codex || toolSource == .amp {
             let agentsMD = directory.appendingPathComponent("AGENTS.md")
             if fm.fileExists(atPath: agentsMD.path) {
-                upsertSkill(at: agentsMD, toolSource: toolSource, isDirectory: false)
+                upsertSkill(at: agentsMD, toolSource: toolSource, isDirectory: false, isGlobal: isGlobal)
             }
             // Also scan subdirectories for skills
             if let contents = try? fm.contentsOfDirectory(
@@ -50,7 +93,7 @@ final class SkillScanner {
                     if itemIsDir.boolValue {
                         let skillFile = item.appendingPathComponent("AGENTS.md")
                         if fm.fileExists(atPath: skillFile.path) {
-                            upsertSkill(at: skillFile, toolSource: toolSource, isDirectory: true)
+                            upsertSkill(at: skillFile, toolSource: toolSource, isDirectory: true, isGlobal: isGlobal)
                         }
                     }
                 }
@@ -76,24 +119,24 @@ final class SkillScanner {
                 let agentsFile = item.appendingPathComponent("AGENTS.md")
 
                 if fm.fileExists(atPath: skillFile.path) {
-                    upsertSkill(at: skillFile, toolSource: toolSource, isDirectory: true)
+                    upsertSkill(at: skillFile, toolSource: toolSource, isDirectory: true, isGlobal: isGlobal)
                 } else if fm.fileExists(atPath: agentsFile.path) {
-                    upsertSkill(at: agentsFile, toolSource: toolSource, isDirectory: true)
+                    upsertSkill(at: agentsFile, toolSource: toolSource, isDirectory: true, isGlobal: isGlobal)
                 }
             } else if item.pathExtension == "md" || item.pathExtension == "mdc" {
-                upsertSkill(at: item, toolSource: toolSource, isDirectory: false)
+                upsertSkill(at: item, toolSource: toolSource, isDirectory: false, isGlobal: isGlobal)
             }
         }
     }
 
-    private func upsertSkill(at fileURL: URL, toolSource: ToolSource, isDirectory: Bool) {
+    private func upsertSkill(at fileURL: URL, toolSource: ToolSource, isDirectory: Bool, isGlobal: Bool = true) {
         let fm = FileManager.default
         let path = fileURL.path
-        let resolvedPath = fileURL.resolvingSymlinksInPath().path
+        let resolved = fileURL.resolvingSymlinksInPath().path
 
         guard let parsed = SkillParser.parse(fileURL: fileURL, toolSource: toolSource) else { return }
 
-        let attrs = try? fm.attributesOfItem(atPath: resolvedPath)
+        let attrs = try? fm.attributesOfItem(atPath: resolved)
         let modDate = (attrs?[.modificationDate] as? Date) ?? .now
         let fileSize = (attrs?[.size] as? Int) ?? 0
 
@@ -106,17 +149,19 @@ final class SkillScanner {
             name = fileURL.deletingPathExtension().lastPathComponent
         }
 
-        let predicate = #Predicate<Skill> { $0.filePath == path }
+        // Dedup: look up by resolved path first
+        let predicate = #Predicate<Skill> { $0.resolvedPath == resolved }
         let descriptor = FetchDescriptor<Skill>(predicate: predicate)
 
         if let existing = try? modelContext.fetch(descriptor).first {
+            // Same physical file — merge this tool/path into the existing entry
             existing.content = parsed.content
             existing.name = name
             existing.skillDescription = parsed.description
             existing.frontmatter = parsed.frontmatter
             existing.fileModifiedDate = modDate
             existing.fileSize = fileSize
-            existing.resolvedPath = resolvedPath
+            existing.addInstallation(path: path, tool: toolSource)
         } else {
             let skill = Skill(
                 filePath: path,
@@ -128,8 +173,8 @@ final class SkillScanner {
                 frontmatter: parsed.frontmatter,
                 fileModifiedDate: modDate,
                 fileSize: fileSize,
-                isGlobal: true,
-                resolvedPath: resolvedPath
+                isGlobal: isGlobal,
+                resolvedPath: resolved
             )
             modelContext.insert(skill)
         }
@@ -143,8 +188,16 @@ final class SkillScanner {
         let fm = FileManager.default
 
         for skill in skills {
-            if !fm.fileExists(atPath: skill.filePath) {
+            // Remove paths that no longer exist
+            let validPaths = skill.installedPaths.filter { fm.fileExists(atPath: $0) }
+            if validPaths.isEmpty {
                 modelContext.delete(skill)
+            } else {
+                skill.installedPaths = validPaths
+                // Update primary filePath if it was deleted
+                if !fm.fileExists(atPath: skill.filePath), let first = validPaths.first {
+                    skill.filePath = first
+                }
             }
         }
         try? modelContext.save()
