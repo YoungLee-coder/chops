@@ -100,7 +100,7 @@ struct SkillMetadataBar: View {
 
     private var collectionPickerContent: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Collections").font(.headline).padding(.bottom, 4)
+            Text("metadata.collections".localized).font(.headline).padding(.bottom, 4)
             ForEach(allCollections) { collection in
                 let isAssigned = skill.collections.contains(where: { $0.name == collection.name })
                 Button {
@@ -123,7 +123,7 @@ struct SkillMetadataBar: View {
                 .buttonStyle(.plain)
             }
             if allCollections.isEmpty {
-                Text("No collections yet")
+                Text("metadata.noCollections".localized)
                     .foregroundStyle(.secondary)
                     .font(.caption)
             }

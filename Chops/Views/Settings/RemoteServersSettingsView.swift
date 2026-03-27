@@ -9,10 +9,10 @@ struct RemoteServersSettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Remote Servers")
+            Text("remoteServers.header".localized)
                 .font(.headline)
 
-            Text("Connect to remote servers to browse and edit skills via SSH. Requires key-based authentication.")
+            Text("remoteServers.description".localized)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -30,7 +30,7 @@ struct RemoteServersSettingsView: View {
 
             HStack {
                 Spacer()
-                Button("Add Server...") {
+                Button("remoteServers.addServer".localized) {
                     showingAddSheet = true
                 }
             }
@@ -68,12 +68,12 @@ private struct ServerRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fontDesign(.monospaced)
-                    Text("Path: \(server.skillsBasePath)")
+                    Text("remoteServers.path".localized(server.skillsBasePath))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .fontDesign(.monospaced)
                     if let lastSync = server.lastSyncDate {
-                        Text("Synced \(lastSync.formatted(.relative(presentation: .named)))")
+                        Text("remoteServers.synced".localized(lastSync.formatted(.relative(presentation: .named))))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -99,7 +99,7 @@ private struct ServerRow: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Text("Test")
+                        Text("remoteServers.test".localized)
                     }
                 }
                 .disabled(isTesting)
@@ -111,7 +111,7 @@ private struct ServerRow: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Text("Sync")
+                        Text("remoteServers.sync".localized)
                     }
                 }
                 .disabled(isSyncing)
@@ -119,7 +119,7 @@ private struct ServerRow: View {
                 Button {
                     showingEditSheet = true
                 } label: {
-                    Text("Edit")
+                    Text("remoteServers.edit".localized)
                 }
 
                 Button(role: .destructive) {
@@ -133,7 +133,7 @@ private struct ServerRow: View {
             }
 
             if let error = server.lastSyncError {
-                Text("Error: \(error)")
+                Text("remoteServers.error".localized(error))
                     .font(.caption)
                     .foregroundStyle(.red)
                     .textSelection(.enabled)
@@ -214,16 +214,16 @@ private struct AddServerSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Add Remote Server")
+            Text("remoteServers.addTitle".localized)
                 .font(.headline)
 
             Form {
-                TextField("Label", text: $label, prompt: Text("Production Server"))
-                TextField("Host", text: $host, prompt: Text("192.168.1.100"))
-                TextField("Port", text: $port, prompt: Text("22"))
-                TextField("Username", text: $username, prompt: Text("root"))
-                TextField("Base Path", text: $basePath, prompt: Text("e.g. ~/.openclaw, ~/skills"))
-                TextField("SSH Key Path", text: $sshKeyPath, prompt: Text("Optional — e.g. ~/.ssh/id_ed25519"))
+                TextField("remoteServers.label".localized, text: $label, prompt: Text("remoteServers.labelPlaceholder".localized))
+                TextField("remoteServers.host".localized, text: $host, prompt: Text("remoteServers.hostPlaceholder".localized))
+                TextField("remoteServers.port".localized, text: $port, prompt: Text("remoteServers.portPlaceholder".localized))
+                TextField("remoteServers.username".localized, text: $username, prompt: Text("remoteServers.usernamePlaceholder".localized))
+                TextField("remoteServers.basePath".localized, text: $basePath, prompt: Text("remoteServers.basePathPlaceholder".localized))
+                TextField("remoteServers.sshKeyPath".localized, text: $sshKeyPath, prompt: Text("remoteServers.sshKeyPathPlaceholder".localized))
             }
             .formStyle(.grouped)
 
@@ -234,25 +234,25 @@ private struct AddServerSheet: View {
             }
 
             if testPassed {
-                Label("Connection successful", systemImage: "checkmark.circle.fill")
+                Label("remoteServers.connectionSuccessful".localized, systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
                     .font(.caption)
             }
 
             HStack {
-                Button("Cancel") {
+                Button("remoteServers.cancel".localized) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Test Connection") {
+                Button("remoteServers.testConnection".localized) {
                     testConnection()
                 }
                 .disabled(host.isEmpty || username.isEmpty || isTesting)
 
-                Button("Add") {
+                Button("remoteServers.add".localized) {
                     addServer()
                     dismiss()
                 }
@@ -329,28 +329,28 @@ private struct EditServerSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Edit Server")
+            Text("remoteServers.editTitle".localized)
                 .font(.headline)
 
             Form {
-                TextField("Label", text: $label, prompt: Text("Production Server"))
-                TextField("Host", text: $host, prompt: Text("192.168.1.100"))
-                TextField("Port", text: $port, prompt: Text("22"))
-                TextField("Username", text: $username, prompt: Text("root"))
-                TextField("Base Path", text: $basePath, prompt: Text("e.g. ~/.openclaw, ~/skills"))
-                TextField("SSH Key Path", text: $sshKeyPath, prompt: Text("Optional — e.g. ~/.ssh/id_ed25519"))
+                TextField("remoteServers.label".localized, text: $label, prompt: Text("remoteServers.labelPlaceholder".localized))
+                TextField("remoteServers.host".localized, text: $host, prompt: Text("remoteServers.hostPlaceholder".localized))
+                TextField("remoteServers.port".localized, text: $port, prompt: Text("remoteServers.portPlaceholder".localized))
+                TextField("remoteServers.username".localized, text: $username, prompt: Text("remoteServers.usernamePlaceholder".localized))
+                TextField("remoteServers.basePath".localized, text: $basePath, prompt: Text("remoteServers.basePathPlaceholder".localized))
+                TextField("remoteServers.sshKeyPath".localized, text: $sshKeyPath, prompt: Text("remoteServers.sshKeyPathPlaceholder".localized))
             }
             .formStyle(.grouped)
 
             HStack {
-                Button("Cancel") {
+                Button("remoteServers.cancel".localized) {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
 
                 Spacer()
 
-                Button("Save") {
+                Button("remoteServers.save".localized) {
                     let connectionChanged = server.host != host
                         || server.username != username
                         || server.skillsBasePath != basePath
