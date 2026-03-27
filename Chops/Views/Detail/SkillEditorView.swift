@@ -194,7 +194,7 @@ struct SkillEditorView: View {
         ZStack(alignment: .topTrailing) {
             if document.isLoadingRemote {
                 VStack {
-                    ProgressView("Loading from server...")
+                    ProgressView("editor.loadingFromServer".localized)
                         .padding()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -206,13 +206,13 @@ struct SkillEditorView: View {
                 if document.isSavingRemote {
                     ProgressView()
                         .controlSize(.small)
-                    Text("Saving...")
+                    Text("editor.saving".localized)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 if document.hasUnsavedChanges {
-                    Text("Modified")
+                    Text("editor.modified".localized)
                         .font(.caption)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
